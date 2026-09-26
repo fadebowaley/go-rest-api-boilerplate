@@ -14,11 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/auth"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/config"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/db"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/server"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/user"
+	"github.com/fadebowaley/applico/internal/auth"
+	"github.com/fadebowaley/applico/internal/config"
+	"github.com/fadebowaley/applico/internal/db"
+	"github.com/fadebowaley/applico/internal/server"
+	"github.com/fadebowaley/applico/internal/tenant"
+	"github.com/fadebowaley/applico/internal/user"
 )
 
 // createTestSchema creates the SQLite test schema using GORM AutoMigrate for consistency
@@ -26,6 +27,37 @@ func createTestSchema(t *testing.T, database *gorm.DB) {
 	t.Helper()
 
 	err := database.AutoMigrate(&user.User{}, &user.Role{}, &auth.RefreshToken{})
+	assert.NoError(t, err)
+
+	// Drop and recreate tenant tables manually with TEXT for JSON columns
+	// (AutoMigrate uses jsonb which fails to scan back from SQLite string values)
+	database.Exec("DROP TABLE IF EXISTS tenant_users")
+	database.Exec("DROP TABLE IF EXISTS tenants")
+	err = database.Exec(`
+		CREATE TABLE tenants (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			slug TEXT NOT NULL UNIQUE,
+			type TEXT NOT NULL DEFAULT 'faith_based',
+			settings TEXT DEFAULT '{}',
+			status TEXT NOT NULL DEFAULT 'active',
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			deleted_at DATETIME
+		)
+	`).Error
+	assert.NoError(t, err)
+
+	err = database.Exec(`
+		CREATE TABLE tenant_users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			roles TEXT DEFAULT '[]',
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(tenant_id, user_id)
+		)
+	`).Error
 	assert.NoError(t, err)
 
 	// Drop the auto-created user_roles table (created by GORM for many2many)
@@ -49,6 +81,7 @@ func createTestSchema(t *testing.T, database *gorm.DB) {
 	roles := []user.Role{
 		{ID: 1, Name: "user", Description: "Standard user with basic permissions"},
 		{ID: 2, Name: "admin", Description: "Administrator with full system access"},
+		{ID: 3, Name: "tenant_admin", Description: "Tenant administrator"},
 	}
 	for _, role := range roles {
 		var existingRole user.Role
@@ -72,9 +105,11 @@ func setupTestRouter(t *testing.T) *gin.Engine {
 	authService := auth.NewServiceWithRepo(&testCfg.JWT, database)
 	userRepo := user.NewRepository(database)
 	userService := user.NewService(userRepo)
-	userHandler := user.NewHandler(userService, authService)
+	tenantRepo := tenant.NewRepository(database)
+	tenantSvc := tenant.NewService(tenantRepo)
+	userHandler := user.NewHandler(userService, authService, tenantSvc)
 
-	router := server.SetupRouter(userHandler, authService, testCfg, database)
+	router := server.SetupRouter(userHandler, authService, testCfg, database, nil, nil, nil, nil, nil, tenantSvc, nil, nil, nil, nil, nil, nil, nil)
 
 	return router
 }
@@ -95,9 +130,11 @@ func setupRateLimitTestRouter(t *testing.T) *gin.Engine {
 	authService := auth.NewServiceWithRepo(&testCfg.JWT, database)
 	userRepo := user.NewRepository(database)
 	userService := user.NewService(userRepo)
-	userHandler := user.NewHandler(userService, authService)
+	tenantRepo := tenant.NewRepository(database)
+	tenantSvc := tenant.NewService(tenantRepo)
+	userHandler := user.NewHandler(userService, authService, tenantSvc)
 
-	return server.SetupRouter(userHandler, authService, testCfg, database)
+	return server.SetupRouter(userHandler, authService, testCfg, database, nil, nil, nil, nil, nil, tenantSvc, nil, nil, nil, nil, nil, nil, nil)
 }
 
 func TestRegisterHandler(t *testing.T) {

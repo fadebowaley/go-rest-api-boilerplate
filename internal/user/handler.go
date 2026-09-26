@@ -2,28 +2,33 @@ package user
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/auth"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/contextutil"
-	apiErrors "github.com/vahiiiid/go-rest-api-boilerplate/internal/errors"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/middleware"
+	"github.com/fadebowaley/applico/internal/auth"
+	"github.com/fadebowaley/applico/internal/contextutil"
+	apiErrors "github.com/fadebowaley/applico/internal/errors"
+	"github.com/fadebowaley/applico/internal/middleware"
+	"github.com/fadebowaley/applico/internal/tenant"
 )
 
 // Handler handles user-related HTTP requests
 type Handler struct {
-	userService Service
-	authService auth.Service
+	userService   Service
+	authService   auth.Service
+	tenantService tenant.Service
 }
 
 // NewHandler creates a new user handler
-func NewHandler(userService Service, authService auth.Service) *Handler {
+func NewHandler(userService Service, authService auth.Service, tenantService tenant.Service) *Handler {
 	return &Handler{
-		userService: userService,
-		authService: authService,
+		userService:   userService,
+		authService:   authService,
+		tenantService: tenantService,
 	}
 }
 
@@ -52,6 +57,49 @@ func (h *Handler) Register(c *gin.Context) {
 			_ = c.Error(apiErrors.Conflict("Email already exists"))
 			return
 		}
+		_ = c.Error(apiErrors.InternalServerError(err))
+		return
+	}
+
+	// Assign tenant_admin role to self-registered users (tenant owner)
+	for _, role := range []string{"tenant_admin"} {
+		if err := h.userService.AssignUserRole(c.Request.Context(), user.ID, role); err != nil {
+			_ = c.Error(apiErrors.InternalServerError(fmt.Errorf("failed to assign role %s: %w", role, err)))
+			return
+		}
+	}
+
+	// Create tenant for the new user
+	orgName := strings.TrimSpace(req.Organization)
+	if orgName == "" {
+		orgName = req.Name + "'s Organization"
+	}
+	slug := strings.ToLower(strings.ReplaceAll(orgName, " ", "-"))
+
+	createReq := &tenant.CreateTenantRequest{
+		Name: orgName,
+		Slug: slug,
+		Type: "faith_based",
+	}
+	tenantResp, err := h.tenantService.Create(c.Request.Context(), createReq)
+	if err != nil {
+		_ = c.Error(apiErrors.InternalServerError(fmt.Errorf("failed to create tenant: %w", err)))
+		return
+	}
+
+	// Add user as tenant admin
+	_, err = h.tenantService.AddUser(c.Request.Context(), tenantResp.ID, &tenant.AddTenantUserRequest{
+		UserID: user.ID,
+		Roles:  []string{"tenant_admin"},
+	})
+	if err != nil {
+		_ = c.Error(apiErrors.InternalServerError(fmt.Errorf("failed to add user to tenant: %w", err)))
+		return
+	}
+
+	// Re-fetch user so JWT includes the newly assigned roles
+	user, err = h.userService.GetUserByID(c.Request.Context(), user.ID)
+	if err != nil {
 		_ = c.Error(apiErrors.InternalServerError(err))
 		return
 	}
@@ -417,4 +465,268 @@ func (h *Handler) ListUsers(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, apiErrors.Success(response))
+}
+
+// UpdateMe godoc
+// @Summary Update current user
+// @Description Update the currently authenticated user's profile
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body UpdateUserRequest true "Update request"
+// @Success 200 {object} errors.Response{success=bool,data=UserResponse}
+// @Failure 400 {object} errors.Response{success=bool,error=errors.ErrorInfo}
+// @Failure 500 {object} errors.Response{success=bool,error=errors.ErrorInfo}
+// @Router /api/v1/auth/me [put]
+func (h *Handler) UpdateMe(c *gin.Context) {
+	userID := contextutil.GetUserID(c)
+	if userID == 0 {
+		_ = c.Error(apiErrors.Unauthorized("User not authenticated"))
+		return
+	}
+
+	var req UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		_ = c.Error(apiErrors.FromGinValidation(err))
+		return
+	}
+
+	user, err := h.userService.UpdateUser(c.Request.Context(), userID, req)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			_ = c.Error(apiErrors.NotFound("User not found"))
+			return
+		}
+		if errors.Is(err, ErrEmailExists) {
+			_ = c.Error(apiErrors.Conflict("Email already exists"))
+			return
+		}
+		_ = c.Error(apiErrors.InternalServerError(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, apiErrors.Success(ToUserResponse(user)))
+}
+
+// ChangePassword godoc
+// @Summary Change password
+// @Description Change current user password (requires current password)
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body ChangePasswordRequest true "Password change request"
+// @Success 200 {object} errors.Response{success=bool,data=object}
+// @Failure 400 {object} errors.Response{success=bool,error=errors.ErrorInfo}
+// @Failure 401 {object} errors.Response{success=bool,error=errors.ErrorInfo}
+// @Router /api/v1/auth/change-password [post]
+func (h *Handler) ChangePassword(c *gin.Context) {
+	userID := contextutil.GetUserID(c)
+	if userID == 0 {
+		_ = c.Error(apiErrors.Unauthorized("User not authenticated"))
+		return
+	}
+
+	var req ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		_ = c.Error(apiErrors.FromGinValidation(err))
+		return
+	}
+
+	if err := h.userService.ChangePassword(c.Request.Context(), userID, req); err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			_ = c.Error(apiErrors.NotFound("User not found"))
+			return
+		}
+		if errors.Is(err, ErrPasswordMismatch) {
+			_ = c.Error(apiErrors.Forbidden("Current password is incorrect"))
+			return
+		}
+		if errors.Is(err, ErrSamePassword) {
+			_ = c.Error(apiErrors.BadRequest("New password must be different from current password"))
+			return
+		}
+		_ = c.Error(apiErrors.InternalServerError(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, apiErrors.Success(gin.H{"message": "Password changed successfully"}))
+}
+
+// ForgotPassword godoc
+// @Summary Request password reset
+// @Description Request a password reset token (returns token in development, sends email in production)
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body ForgotPasswordRequest true "Forgot password request"
+// @Success 200 {object} errors.Response{success=bool,data=PasswordResetResponse}
+// @Failure 400 {object} errors.Response{success=bool,error=errors.ErrorInfo}
+// @Router /api/v1/auth/forgot-password [post]
+func (h *Handler) ForgotPassword(c *gin.Context) {
+	var req ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		_ = c.Error(apiErrors.FromGinValidation(err))
+		return
+	}
+
+	result, err := h.userService.RequestPasswordReset(c.Request.Context(), req.Email)
+	if err != nil {
+		_ = c.Error(apiErrors.InternalServerError(err))
+		return
+	}
+
+	if result == nil {
+		c.JSON(http.StatusOK, apiErrors.Success(PasswordResetResponse{
+			Message: "If the email exists, a reset link has been sent",
+		}))
+		return
+	}
+
+	c.JSON(http.StatusOK, apiErrors.Success(result))
+}
+
+// ResetPassword godoc
+// @Summary Reset password
+// @Description Reset password using a valid reset token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body ResetPasswordRequest true "Reset password request"
+// @Success 200 {object} errors.Response{success=bool,data=object}
+// @Failure 400 {object} errors.Response{success=bool,error=errors.ErrorInfo}
+// @Router /api/v1/auth/reset-password [post]
+func (h *Handler) ResetPassword(c *gin.Context) {
+	var req ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		_ = c.Error(apiErrors.FromGinValidation(err))
+		return
+	}
+
+	if err := h.userService.ResetPassword(c.Request.Context(), req); err != nil {
+		if errors.Is(err, ErrInvalidResetToken) {
+			_ = c.Error(apiErrors.BadRequest("Invalid or expired reset token"))
+			return
+		}
+		_ = c.Error(apiErrors.InternalServerError(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, apiErrors.Success(gin.H{"message": "Password reset successfully"}))
+}
+
+// AssignUserRole godoc
+// @Summary Assign role to user
+// @Description Assign a role to a user (admin only)
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "User ID"
+// @Param request body AssignRoleRequest true "Role assignment"
+// @Success 200 {object} errors.Response{success=bool,data=object}
+// @Failure 400 {object} errors.Response{success=bool,error=errors.ErrorInfo}
+// @Failure 404 {object} errors.Response{success=bool,error=errors.ErrorInfo}
+// @Router /api/v1/admin/users/{id}/roles [post]
+func (h *Handler) AssignUserRole(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		_ = c.Error(apiErrors.BadRequest("Invalid user ID"))
+		return
+	}
+
+	var req AssignRoleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		_ = c.Error(apiErrors.FromGinValidation(err))
+		return
+	}
+
+	if err := h.userService.AssignUserRole(c.Request.Context(), uint(id), req.RoleName); err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			_ = c.Error(apiErrors.NotFound("User not found"))
+			return
+		}
+		if errors.Is(err, ErrInvalidRole) {
+			_ = c.Error(apiErrors.BadRequest("Invalid role"))
+			return
+		}
+		_ = c.Error(apiErrors.InternalServerError(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, apiErrors.Success(gin.H{"message": "Role assigned successfully"}))
+}
+
+// RemoveUserRole godoc
+// @Summary Remove role from user
+// @Description Remove a role from a user (admin only)
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "User ID"
+// @Param roleName path string true "Role name"
+// @Success 200 {object} errors.Response{success=bool,data=object}
+// @Failure 404 {object} errors.Response{success=bool,error=errors.ErrorInfo}
+// @Router /api/v1/admin/users/{id}/roles/{roleName} [delete]
+func (h *Handler) RemoveUserRole(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		_ = c.Error(apiErrors.BadRequest("Invalid user ID"))
+		return
+	}
+
+	roleName := c.Param("roleName")
+	if roleName == "" {
+		_ = c.Error(apiErrors.BadRequest("Role name is required"))
+		return
+	}
+
+	if err := h.userService.RemoveUserRole(c.Request.Context(), uint(id), roleName); err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			_ = c.Error(apiErrors.NotFound("User not found"))
+			return
+		}
+		_ = c.Error(apiErrors.InternalServerError(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, apiErrors.Success(gin.H{"message": "Role removed successfully"}))
+}
+
+// GetUserRoles godoc
+// @Summary Get user roles
+// @Description Get all roles assigned to a user (admin only)
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "User ID"
+// @Success 200 {object} errors.Response{success=bool,data=[]RoleResponse}
+// @Failure 404 {object} errors.Response{success=bool,error=errors.ErrorInfo}
+// @Router /api/v1/admin/users/{id}/roles [get]
+func (h *Handler) GetUserRoles(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		_ = c.Error(apiErrors.BadRequest("Invalid user ID"))
+		return
+	}
+
+	roles, err := h.userService.GetUserRoles(c.Request.Context(), uint(id))
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			_ = c.Error(apiErrors.NotFound("User not found"))
+			return
+		}
+		_ = c.Error(apiErrors.InternalServerError(err))
+		return
+	}
+
+	roleResponses := make([]RoleResponse, len(roles))
+	for i, role := range roles {
+		roleResponses[i] = ToRoleResponse(&role)
+	}
+
+	c.JSON(http.StatusOK, apiErrors.Success(roleResponses))
 }

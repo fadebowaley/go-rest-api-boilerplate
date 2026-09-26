@@ -1,0 +1,619 @@
+### ============================================
+### APPLICO API - Full Lifecycle Test Collection
+### ============================================
+
+### Variables setup (change these as needed)
+@baseUrl = http://localhost:8080
+@tenantId = 1
+
+### ============================================
+### 1. AUTHENTICATION
+### ============================================
+
+### 1.1 Register a new user
+# @name register
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "newuser@test.com",
+  "password": "Test123!",
+  "name": "New User",
+  "organization": "RCCG"
+}
+
+### 1.2 Login
+# @name login
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "Test123!"
+}
+
+### 1.3 Get current user
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{loginToken}}
+
+### 1.4 Refresh token
+POST {{baseUrl}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+### 1.5 Logout
+POST {{baseUrl}}/api/v1/auth/logout
+Authorization: Bearer {{loginToken}}
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+### ============================================
+### 2. TENANT MANAGEMENT (Admin)
+### ============================================
+
+### 2.1 List tenants
+GET {{baseUrl}}/api/v1/admin/tenants
+Authorization: Bearer {{adminToken}}
+
+### 2.2 Create a tenant
+# @name createTenant
+POST {{baseUrl}}/api/v1/admin/tenants
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Faith Community Church",
+  "slug": "faith-community",
+  "type": "faith_based",
+  "settings": {
+    "description": "Faith Community Church grant management"
+  }
+}
+
+### 2.3 Get tenant by ID
+GET {{baseUrl}}/api/v1/admin/tenants/{{createTenantId}}
+Authorization: Bearer {{adminToken}}
+
+### 2.4 Update tenant
+PUT {{baseUrl}}/api/v1/admin/tenants/{{createTenantId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Faith Community Church Updated",
+  "settings": {
+    "description": "Updated description"
+  }
+}
+
+### 2.5 Delete tenant
+DELETE {{baseUrl}}/api/v1/admin/tenants/{{createTenantId}}
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 3. USER MANAGEMENT (Admin)
+### ============================================
+
+### 3.1 List all users
+GET {{baseUrl}}/api/v1/admin/users
+Authorization: Bearer {{adminToken}}
+
+### 3.2 Get user by ID
+GET {{baseUrl}}/api/v1/admin/users/1
+Authorization: Bearer {{adminToken}}
+
+### 3.3 Update user
+PUT {{baseUrl}}/api/v1/admin/users/1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Admin Name"
+}
+
+### 3.4 Assign role to user
+POST {{baseUrl}}/api/v1/admin/users/1/roles
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "admin",
+  "tenant_id": 1
+}
+
+### 3.5 Get user roles
+GET {{baseUrl}}/api/v1/admin/users/1/roles
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 4. TENANT USER ASSIGNMENT
+### ============================================
+
+### 4.1 Add user to tenant
+POST {{baseUrl}}/api/v1/admin/tenants/1/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "user_id": 2,
+  "role": "program_manager"
+}
+
+### 4.2 List tenant users
+GET {{baseUrl}}/api/v1/admin/tenants/1/users
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 5. PERMISSIONS (Admin)
+### ============================================
+
+### 5.1 Create permission
+POST {{baseUrl}}/api/v1/admin/permissions
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "grants.approve",
+  "description": "Can approve grant applications",
+  "group": "grants"
+}
+
+### 5.2 List permissions
+GET {{baseUrl}}/api/v1/admin/permissions
+Authorization: Bearer {{adminToken}}
+
+### 5.3 Assign permissions to role
+PUT {{baseUrl}}/api/v1/admin/roles/1/permissions
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "permissions": [1]
+}
+
+### 5.4 Get permissions for role
+GET {{baseUrl}}/api/v1/admin/roles/1/permissions
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 6. GRANT PROGRAMS
+### ============================================
+
+### 6.1 Create a grant program
+# @name createProgram
+POST {{baseUrl}}/api/v1/programs
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "name": "Church Building Support Grant",
+  "description": "Funding for church building and renovation projects",
+  "eligibility_rules": {
+    "max_amount": 50000,
+    "min_amount": 1000,
+    "requires_land_title": true
+  },
+  "currency": "USD"
+}
+
+### 6.2 List programs
+GET {{baseUrl}}/api/v1/programs
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 6.3 Get program by ID
+GET {{baseUrl}}/api/v1/programs/{{programId}}
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 6.4 Update program
+PUT {{baseUrl}}/api/v1/programs/1
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "description": "Updated program description"
+}
+
+### ============================================
+### 7. FORM TEMPLATES
+### ============================================
+
+### 7.1 Create form template
+# @name createForm
+POST {{baseUrl}}/api/v1/forms/templates
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "name": "Church Building Grant Application",
+  "description": "Standard application form",
+  "schema_definition": {
+    "fields": [
+      {"name": "project_title", "type": "text", "label": "Project Title", "required": true},
+      {"name": "amount", "type": "number", "label": "Requested Amount", "required": true},
+      {"name": "location", "type": "text", "label": "Location", "required": true}
+    ]
+  }
+}
+
+### 7.2 List form templates
+GET {{baseUrl}}/api/v1/forms/templates
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 7.3 Get form template by ID
+GET {{baseUrl}}/api/v1/forms/templates/1
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 7.4 Update form template
+PUT {{baseUrl}}/api/v1/forms/templates/1
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "description": "Updated form description"
+}
+
+### 7.5 Publish form template (creates version 1)
+POST {{baseUrl}}/api/v1/forms/templates/1/publish
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 7.6 List form versions
+GET {{baseUrl}}/api/v1/forms/templates/1/versions
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### ============================================
+### 8. WORKFLOW TEMPLATES
+### ============================================
+
+### 8.1 Create workflow template
+# @name createWorkflow
+POST {{baseUrl}}/api/v1/workflows
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "name": "Standard Grant Review",
+  "description": "3-step review process"
+}
+
+### 8.2 List workflow templates
+GET {{baseUrl}}/api/v1/workflows
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 8.3 Create workflow step 1: Initial Review
+POST {{baseUrl}}/api/v1/workflows/1/steps
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "name": "Initial Review",
+  "step_order": 1,
+  "assignee_roles": ["reviewer"]
+}
+
+### 8.4 Create workflow step 2: Committee Review
+POST {{baseUrl}}/api/v1/workflows/1/steps
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "name": "Committee Review",
+  "step_order": 2,
+  "assignee_roles": ["program_manager", "reviewer"]
+}
+
+### 8.5 Create workflow step 3: Final Approval (is_final_approval)
+POST {{baseUrl}}/api/v1/workflows/1/steps
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "name": "Final Approval",
+  "step_order": 3,
+  "assignee_roles": ["tenant_admin"],
+  "is_final_approval": true
+}
+
+### 8.6 List workflow steps
+GET {{baseUrl}}/api/v1/workflows/1/steps
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### ============================================
+### 9. APPLICANTS
+### ============================================
+
+### 9.1 Create applicant
+# @name createApplicant
+POST {{baseUrl}}/api/v1/applicants
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "name": "RCCG Central Parish",
+  "email": "parish@rccg.org",
+  "phone": "+234-800-RCCG",
+  "address": "1 Cathedral Avenue, Lagos",
+  "organization": "RCCG"
+}
+
+### 9.2 List applicants
+GET {{baseUrl}}/api/v1/applicants
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### ============================================
+### 10. GRANT APPLICATIONS
+### ============================================
+
+### 10.1 Create draft grant application
+# @name createGrant
+POST {{baseUrl}}/api/v1/grants
+Authorization: Bearer {{applicantToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "project_title": "Cathedral Renovation Phase 2",
+  "project_description": "Renovation of the main cathedral building",
+  "requested_amount": 25000,
+  "estimated_project_cost": 35000,
+  "project_location": "Lagos, Nigeria",
+  "program_id": 1,
+  "applicant_id": 1,
+  "justification": "The cathedral requires urgent renovation to serve the growing congregation"
+}
+
+### 10.2 List my grants
+GET {{baseUrl}}/api/v1/grants
+Authorization: Bearer {{applicantToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 10.3 Get grant by ID
+GET {{baseUrl}}/api/v1/grants/1
+Authorization: Bearer {{applicantToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 10.4 Update draft grant
+PUT {{baseUrl}}/api/v1/grants/1
+Authorization: Bearer {{applicantToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "project_description": "Updated project description"
+}
+
+### ============================================
+### 11. DOCUMENTS
+### ============================================
+
+### 11.1 Upload document (multipart/form-data)
+POST {{baseUrl}}/api/v1/grants/1/documents
+Authorization: Bearer {{applicantToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: multipart/form-data; boundary=----boundary
+
+------boundary
+Content-Disposition: form-data; name="file"; filename="proposal.pdf"
+Content-Type: application/pdf
+
+< ./sample.pdf
+------boundary
+Content-Disposition: form-data; name="document_type"
+
+proposal
+------boundary--
+
+### 11.2 List documents for a grant
+GET {{baseUrl}}/api/v1/grants/1/documents
+Authorization: Bearer {{applicantToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 11.3 Download a document
+GET {{baseUrl}}/api/v1/grants/1/documents/1/download
+Authorization: Bearer {{applicantToken}}
+X-Tenant-ID: {{tenantId}}
+
+### ============================================
+### 12. SUBMIT GRANT APPLICATION
+### ============================================
+
+### 12.1 Submit grant application
+POST {{baseUrl}}/api/v1/grants/1/submit
+Authorization: Bearer {{applicantToken}}
+X-Tenant-ID: {{tenantId}}
+
+### ============================================
+### 13. WORKFLOW
+### ============================================
+
+### 13.1 List pending approvals
+GET {{baseUrl}}/api/v1/workflow/pending?role=reviewer
+Authorization: Bearer {{reviewerToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 13.2 Get workflow for application
+GET {{baseUrl}}/api/v1/grants/1/workflow
+Authorization: Bearer {{reviewerToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 13.3 Approve step (Step 1: Initial Review)
+POST {{baseUrl}}/api/v1/grants/1/workflow/approve
+Authorization: Bearer {{reviewerToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "comment": "Initial review passed. All documents in order."
+}
+
+### 13.4 Approve step (Step 2: Committee Review)
+POST {{baseUrl}}/api/v1/grants/1/workflow/approve
+Authorization: Bearer {{programManagerToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "comment": "Committee approved. Recommended for final approval."
+}
+
+### 13.5 Approve step (Step 3: Final Approval)
+POST {{baseUrl}}/api/v1/grants/1/workflow/approve
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "comment": "Final approval granted."
+}
+
+### 13.6 Get workflow history
+GET {{baseUrl}}/api/v1/grants/1/workflow/history
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 13.7 Return for correction (alternative flow)
+POST {{baseUrl}}/api/v1/grants/1/workflow/return
+Authorization: Bearer {{reviewerToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "comment": "Please provide additional documentation on land title"
+}
+
+### 13.8 Reject grant (alternative flow)
+POST {{baseUrl}}/api/v1/grants/1/workflow/reject
+Authorization: Bearer {{reviewerToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "comment": "Project does not meet eligibility criteria"
+}
+
+### ============================================
+### 14. DISBURSEMENTS
+### ============================================
+
+### 14.1 List disbursements for grant
+GET {{baseUrl}}/api/v1/grants/1/disbursements
+Authorization: Bearer {{financeOfficerToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 14.2 Create disbursement
+# @name createDisbursement
+POST {{baseUrl}}/api/v1/grants/1/disbursements
+Authorization: Bearer {{financeOfficerToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "grant_application_id": 1,
+  "amount": 25000,
+  "currency": "USD",
+  "notes": "Full disbursement for Cathedral Renovation"
+}
+
+### 14.3 Get disbursement by ID
+GET {{baseUrl}}/api/v1/disbursements/1
+Authorization: Bearer {{financeOfficerToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 14.4 Update disbursement (mark as paid)
+PUT {{baseUrl}}/api/v1/disbursements/1
+Authorization: Bearer {{financeOfficerToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "status": "paid",
+  "evidence_url": "https://banking.example.com/transfer/REF-12345"
+}
+
+### ============================================
+### 15. PROJECT UPDATES
+### ============================================
+
+### 15.1 Create project update
+POST {{baseUrl}}/api/v1/grants/1/updates
+Authorization: Bearer {{applicantToken}}
+X-Tenant-ID: {{tenantId}}
+Content-Type: application/json
+
+{
+  "title": "Foundation Work Started",
+  "description": "Excavation and foundation laying has begun",
+  "status": "in_progress",
+  "completion_percentage": 15
+}
+
+### 15.2 List project updates for a grant
+GET {{baseUrl}}/api/v1/grants/1/updates
+Authorization: Bearer {{applicantToken}}
+X-Tenant-ID: {{tenantId}}
+
+### ============================================
+### 16. DASHBOARD
+### ============================================
+
+### 16.1 Dashboard summary
+GET {{baseUrl}}/api/v1/dashboard/summary
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 16.2 Finance summary
+GET {{baseUrl}}/api/v1/dashboard/finance-summary
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 16.3 Audit summary
+GET {{baseUrl}}/api/v1/dashboard/audit-summary
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 16.4 Program stats
+GET {{baseUrl}}/api/v1/dashboard/program-stats/1
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### ============================================
+### 17. AUDIT LOGS (Admin)
+### ============================================
+
+### 17.1 List audit logs
+GET {{baseUrl}}/api/v1/admin/audit-logs?page=1&per_page=20
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 17.2 Filter audit logs by action
+GET {{baseUrl}}/api/v1/admin/audit-logs?action=approved
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}
+
+### 17.3 Filter audit logs by entity
+GET {{baseUrl}}/api/v1/admin/audit-logs?entity_type=grants&entity_id=1
+Authorization: Bearer {{tenantAdminToken}}
+X-Tenant-ID: {{tenantId}}

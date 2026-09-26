@@ -173,7 +173,7 @@ package todo
 
 import (
     "context"
-    "go-rest-api-boilerplate/internal/errors"
+    "applico/internal/errors"
 )
 
 type Service interface {
@@ -204,8 +204,8 @@ import (
     "strconv"
     
     "github.com/gin-gonic/gin"
-    "github.com/vahiiiid/go-rest-api-boilerplate/internal/contextutil"
-    apiErrors "github.com/vahiiiid/go-rest-api-boilerplate/internal/errors"
+    "github.com/fadebowaley/applico/internal/contextutil"
+    apiErrors "github.com/fadebowaley/applico/internal/errors"
 )
 
 type Handler struct {
@@ -357,7 +357,7 @@ make migrate-down
 
 **Protected Routes** (require valid JWT):
 ```go
-import "github.com/vahiiiid/go-rest-api-boilerplate/internal/middleware"
+import "github.com/fadebowaley/applico/internal/middleware"
 
 // Authentication is typically handled by router setup
 // Use middleware for role-based access control
@@ -365,7 +365,7 @@ import "github.com/vahiiiid/go-rest-api-boilerplate/internal/middleware"
 
 **Role-Based Access**:
 ```go
-import "github.com/vahiiiid/go-rest-api-boilerplate/internal/middleware"
+import "github.com/fadebowaley/applico/internal/middleware"
 
 // Admin-only route
 v1.Use(middleware.RequireAdmin()).
@@ -378,7 +378,7 @@ v1.Use(middleware.RequireRole("admin")).
 
 **Getting Current User**:
 ```go
-import "github.com/vahiiiid/go-rest-api-boilerplate/internal/contextutil"
+import "github.com/fadebowaley/applico/internal/contextutil"
 
 func (h *Handler) MyHandler(c *gin.Context) {
     userID := contextutil.GetUserID(c)
@@ -401,7 +401,7 @@ Use the centralized error handling:
 ```go
 import (
     "errors"
-    apiErrors "github.com/vahiiiid/go-rest-api-boilerplate/internal/errors"
+    apiErrors "github.com/fadebowaley/applico/internal/errors"
 )
 
 // Validation errors
@@ -634,9 +634,9 @@ curl http://localhost:8080/health
 ## 📖 Additional Resources
 
 - **Documentation Site**: https://vahiiiid.github.io/go-rest-api-docs/
-- **Main Repository**: https://github.com/vahiiiid/go-rest-api-boilerplate
-- **Issues**: https://github.com/vahiiiid/go-rest-api-boilerplate/issues
-- **Discussions**: https://github.com/vahiiiid/go-rest-api-boilerplate/discussions
+- **Main Repository**: https://github.com/fadebowaley/applico
+- **Issues**: https://github.com/fadebowaley/applico/issues
+- **Discussions**: https://github.com/fadebowaley/applico/discussions
 
 ---
 

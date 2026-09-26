@@ -14,8 +14,8 @@ Thank you for your interest in contributing! This document provides guidelines a
 1. Fork the repository
 2. Clone your fork:
 ```bash
-git clone https://github.com/YOUR_USERNAME/go-rest-api-boilerplate.git
-cd go-rest-api-boilerplate
+git clone https://github.com/YOUR_USERNAME/applico.git
+cd applico
 ```
 
 3. Create a new branch:

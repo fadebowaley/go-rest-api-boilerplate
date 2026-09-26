@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/config"
+	"github.com/fadebowaley/applico/internal/config"
 )
 
 // customLogger wraps the default logger to ignore ErrRecordNotFound

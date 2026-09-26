@@ -11,7 +11,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/config"
+	"github.com/fadebowaley/applico/internal/config"
 )
 
 // testUser is a minimal user struct for testing

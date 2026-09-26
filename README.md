@@ -9,15 +9,15 @@ Production-ready in 90 seconds. No headaches, just clean code.
 *GRAB is a Go boilerplate that doesn't waste your time — highly tested, Docker-ready, fully documented, **AI-assistant optimized**, with everything you need. Built for developers who want to code with AI, not fight it.*
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&logoColor=white)](https://go.dev/)
-[![Release](https://img.shields.io/github/v/release/vahiiiid/go-rest-api-boilerplate?color=blue)](https://github.com/vahiiiid/go-rest-api-boilerplate/releases/tag/v2.0.0)
-[![codecov](https://codecov.io/gh/vahiiiid/go-rest-api-boilerplate/graph/badge.svg?branch=main)](https://codecov.io/gh/vahiiiid/go-rest-api-boilerplate)
-[![CI](https://github.com/vahiiiid/go-rest-api-boilerplate/workflows/CI/badge.svg)](https://github.com/vahiiiid/go-rest-api-boilerplate/actions)
+[![Release](https://img.shields.io/github/v/release/fadebowaley/applico?color=blue)](https://github.com/fadebowaley/applico/releases/tag/v2.0.0)
+[![codecov](https://codecov.io/gh/fadebowaley/applico/graph/badge.svg?branch=main)](https://codecov.io/gh/fadebowaley/applico)
+[![CI](https://github.com/fadebowaley/applico/workflows/CI/badge.svg)](https://github.com/fadebowaley/applico/actions)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Go Report Card](https://goreportcard.com/badge/github.com/vahiiiid/go-rest-api-boilerplate)](https://goreportcard.com/report/github.com/vahiiiid/go-rest-api-boilerplate)
+[![Go Report Card](https://goreportcard.com/badge/github.com/fadebowaley/applico)](https://goreportcard.com/report/github.com/fadebowaley/applico)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-read%20the%20docs-brightgreen?logo=readthedocs&logoColor=white)](https://grabapi.dev/docs/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![GitHub Stars](https://img.shields.io/github/stars/vahiiiid/go-rest-api-boilerplate?style=social)](https://github.com/vahiiiid/go-rest-api-boilerplate/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/fadebowaley/applico?style=social)](https://github.com/fadebowaley/applico/stargazers)
 
 **[🌐 Official Website](https://grabapi.dev/)** • **[📖 Full Documentation](https://grabapi.dev/docs/)** • **[🚀 Quick Start](#-quick-start)** • **[✨ Live Demo](#-see-it-in-action)**
 
@@ -106,8 +106,8 @@ Get your API running in **under 2 minutes**:
 ### One-Command Setup ⚡
 
 ```bash
-git clone https://github.com/vahiiiid/go-rest-api-boilerplate.git
-cd go-rest-api-boilerplate
+git clone https://github.com/fadebowaley/applico.git
+cd applico
 make quick-start
 ```
 
@@ -433,9 +433,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - 🌐 [Official Website](https://grabapi.dev/)
 - 📖 [Read the Documentation](https://grabapi.dev/docs/)
-- 🐛 [Report Bugs](https://github.com/vahiiiid/go-rest-api-boilerplate/issues)
-- 💬 [Ask Questions](https://github.com/vahiiiid/go-rest-api-boilerplate/discussions)
-- ⭐ [Star this repo](https://github.com/vahiiiid/go-rest-api-boilerplate) if you find it helpful!
+- 🐛 [Report Bugs](https://github.com/fadebowaley/applico/issues)
+- 💬 [Ask Questions](https://github.com/fadebowaley/applico/discussions)
+- ⭐ [Star this repo](https://github.com/fadebowaley/applico) if you find it helpful!
 
 ---
 
@@ -443,6 +443,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ for the Go community**
 
-[🌐 Website](https://grabapi.dev/) • [⭐ Star](https://github.com/vahiiiid/go-rest-api-boilerplate) • [📖 Docs](https://grabapi.dev/docs/) • [🐛 Issues](https://github.com/vahiiiid/go-rest-api-boilerplate/issues) • [💬 Discussions](https://github.com/vahiiiid/go-rest-api-boilerplate/discussions)
+[🌐 Website](https://grabapi.dev/) • [⭐ Star](https://github.com/fadebowaley/applico) • [📖 Docs](https://grabapi.dev/docs/) • [🐛 Issues](https://github.com/fadebowaley/applico/issues) • [💬 Discussions](https://github.com/fadebowaley/applico/discussions)
 
 </div>

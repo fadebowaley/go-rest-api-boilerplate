@@ -12,26 +12,38 @@ import (
 
 	"gorm.io/gorm"
 
-	_ "github.com/vahiiiid/go-rest-api-boilerplate/api/docs"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/auth"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/config"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/db"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/migrate"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/server"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/user"
+	_ "github.com/fadebowaley/applico/api/docs"
+	"github.com/fadebowaley/applico/internal/applicant"
+	"github.com/fadebowaley/applico/internal/audit"
+	"github.com/fadebowaley/applico/internal/auth"
+	"github.com/fadebowaley/applico/internal/config"
+	"github.com/fadebowaley/applico/internal/db"
+	"github.com/fadebowaley/applico/internal/disbursement"
+	"github.com/fadebowaley/applico/internal/form"
+	"github.com/fadebowaley/applico/internal/project"
+	"github.com/fadebowaley/applico/internal/stats"
+	"github.com/fadebowaley/applico/internal/document"
+	"github.com/fadebowaley/applico/internal/grant"
+	"github.com/fadebowaley/applico/internal/migrate"
+	"github.com/fadebowaley/applico/internal/permission"
+	"github.com/fadebowaley/applico/internal/program"
+	"github.com/fadebowaley/applico/internal/server"
+	"github.com/fadebowaley/applico/internal/tenant"
+	"github.com/fadebowaley/applico/internal/user"
+	"github.com/fadebowaley/applico/internal/workflow"
 )
 
-// @title Go REST API Boilerplate
+// @title Applico API
 // @version 1.0
-// @description A production-ready REST API boilerplate in Go with JWT authentication
+// @description Multi-tenant grant management platform for faith-based and community organizations. Supports tenants, users, roles, grant programs, dynamic forms, applicant management, grant applications, document management, configurable workflows, disbursements, project updates, dashboards, and audit logging.
 // @termsOfService http://swagger.io/terms/
 
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
+// @contact.name Applico Support
+// @contact.url https://applico.dev/support
+// @contact.email support@applico.dev
 
-// @license.name MIT
-// @license.url https://opensource.org/licenses/MIT
+// @license.name Proprietary
+// @license.url https://applico.dev/license
 
 // @host localhost:8080
 // @BasePath /
@@ -40,6 +52,27 @@ import (
 // @in header
 // @name Authorization
 // @description Type "Bearer" followed by a space and JWT token.
+
+type workflowStarterAdapter struct {
+	svc workflow.Service
+}
+
+type userLookupAdapter struct {
+	svc user.Service
+}
+
+func (a *userLookupAdapter) FindByEmail(ctx context.Context, email string) (uint, string, error) {
+	u, err := a.svc.GetUserByEmail(ctx, email)
+	if err != nil {
+		return 0, "", err
+	}
+	return u.ID, u.Email, nil
+}
+
+func (a *workflowStarterAdapter) StartWorkflow(ctx context.Context, applicationID, workflowTemplateID uint) error {
+	_, err := a.svc.StartWorkflow(ctx, applicationID, workflowTemplateID)
+	return err
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -81,9 +114,61 @@ func run() error {
 	authService := auth.NewServiceWithRepo(&cfg.JWT, database)
 	userRepo := user.NewRepository(database)
 	userService := user.NewService(userRepo)
-	userHandler := user.NewHandler(userService, authService)
 
-	router := server.SetupRouter(userHandler, authService, cfg, database)
+	tenantRepo := tenant.NewRepository(database)
+	tenantService := tenant.NewServiceWithUsers(tenantRepo, &userLookupAdapter{svc: userService})
+	tenantHandler := tenant.NewHandler(tenantService)
+
+	userHandler := user.NewHandler(userService, authService, tenantService)
+
+	permissionRepo := permission.NewRepository(database)
+	permissionService := permission.NewService(permissionRepo)
+	permissionHandler := permission.NewHandler(permissionService)
+
+	auditRepo := audit.NewRepository(database)
+	auditService := audit.NewService(auditRepo)
+	auditHandler := audit.NewHandler(auditService)
+
+	workflowRepo := workflow.NewRepository(database)
+	workflowService := workflow.NewService(workflowRepo)
+
+	grantRepo := grant.NewRepository(database)
+	grantService := grant.NewServiceWithWorkflow(grantRepo, &workflowStarterAdapter{svc: workflowService})
+	grantHandler := grant.NewHandler(grantService, auditService)
+
+	workflowService.SetGrantUpdater(grantService)
+	workflowHandler := workflow.NewHandler(workflowService, auditService)
+
+	documentRepo := document.NewRepository(database)
+	documentStorage := document.NewLocalStorage("uploads")
+	documentService := document.NewService(documentRepo, grantService, documentStorage)
+	documentHandler := document.NewHandler(documentService, auditService)
+
+	programRepo := program.NewRepository(database)
+	programService := program.NewService(programRepo)
+	programHandler := program.NewHandler(programService)
+
+	applicantRepo := applicant.NewRepository(database)
+	applicantService := applicant.NewService(applicantRepo)
+	applicantHandler := applicant.NewHandler(applicantService)
+
+	disbursementRepo := disbursement.NewRepository(database)
+	disbursementService := disbursement.NewService(disbursementRepo, grantService)
+	disbursementHandler := disbursement.NewHandler(disbursementService, auditService)
+
+	projectRepo := project.NewRepository(database)
+	projectService := project.NewService(projectRepo, grantService)
+	projectHandler := project.NewHandler(projectService, auditService)
+
+	statsRepo := stats.NewRepository(database)
+	statsService := stats.NewService(statsRepo)
+	statsHandler := stats.NewHandler(statsService)
+
+	formRepo := form.NewRepository(database)
+	formService := form.NewService(formRepo)
+	formHandler := form.NewHandler(formService, auditService)
+
+	router := server.SetupRouter(userHandler, authService, cfg, database, permissionHandler, auditHandler, grantHandler, documentHandler, tenantHandler, tenantService, programHandler, applicantHandler, workflowHandler, disbursementHandler, projectHandler, statsHandler, formHandler)
 
 	port := cfg.Server.Port
 	if port == "" {

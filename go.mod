@@ -1,4 +1,4 @@
-module github.com/vahiiiid/go-rest-api-boilerplate
+module github.com/fadebowaley/applico
 
 go 1.24.0
 
@@ -15,14 +15,17 @@ require (
 	github.com/swaggo/swag v1.16.6
 	golang.org/x/crypto v0.48.0
 	golang.org/x/term v0.40.0
+	gorm.io/datatypes v1.2.7
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.1
 )
 
 require (
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
+	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/lib/pq v1.10.9 // indirect
@@ -32,6 +35,7 @@ require (
 	go.uber.org/mock v0.5.0 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
+	gorm.io/driver/mysql v1.5.6 // indirect
 )
 
 require (

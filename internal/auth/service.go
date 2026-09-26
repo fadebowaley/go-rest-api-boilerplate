@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -13,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/config"
+	"github.com/fadebowaley/applico/internal/config"
 )
 
 var (
@@ -133,6 +134,9 @@ func (s *service) GenerateToken(userID uint, email string, name string) (string,
 	expirationTime := now.Add(s.accessTokenTTL)
 
 	var roles []string
+	var permissions []string
+	var tenantIDs []uint
+	tenantPermissions := make(map[string][]string)
 	if s.db != nil {
 		var roleNames []string
 		err := s.db.Table("roles").
@@ -145,15 +149,73 @@ func (s *service) GenerateToken(userID uint, email string, name string) (string,
 			return "", fmt.Errorf("failed to fetch user roles: %w", err)
 		}
 		roles = roleNames
+
+		var permNames []string
+		err = s.db.Table("permissions").
+			Select("DISTINCT permissions.name").
+			Joins("JOIN role_permissions ON role_permissions.permission_id = permissions.id").
+			Joins("JOIN user_roles ON user_roles.role_id = role_permissions.role_id").
+			Where("user_roles.user_id = ?", userID).
+			Find(&permNames).Error
+		if err == nil {
+			permissions = permNames
+		}
+
+		var tenantUserRows []struct {
+			TenantID uint
+			Roles    string
+		}
+		s.db.Table("tenant_users").
+			Select("tenant_id, roles").
+			Where("user_id = ?", userID).
+			Find(&tenantUserRows)
+
+		for _, tu := range tenantUserRows {
+			var roleNames []string
+			if err := json.Unmarshal([]byte(tu.Roles), &roleNames); err != nil || len(roleNames) == 0 {
+				continue
+			}
+
+			var permRows []struct {
+				Permissions string
+			}
+			s.db.Table("tenant_roles").
+				Select("permissions").
+				Where("tenant_id = ? AND name IN ?", tu.TenantID, roleNames).
+				Find(&permRows)
+
+			var allPerms []string
+			for _, pr := range permRows {
+				var perms []string
+				if err := json.Unmarshal([]byte(pr.Permissions), &perms); err == nil {
+					allPerms = append(allPerms, perms...)
+				}
+			}
+
+			permSet := make(map[string]struct{})
+			for _, p := range allPerms {
+				permSet[p] = struct{}{}
+			}
+			var deduped []string
+			for p := range permSet {
+				deduped = append(deduped, p)
+			}
+
+			tenantPermissions[fmt.Sprintf("%d", tu.TenantID)] = deduped
+			tenantIDs = append(tenantIDs, tu.TenantID)
+		}
 	}
 
 	claims := jwt.MapClaims{
-		"sub":   fmt.Sprintf("%d", userID),
-		"email": email,
-		"name":  name,
-		"roles": roles,
-		"exp":   expirationTime.Unix(),
-		"iat":   now.Unix(),
+		"sub":                fmt.Sprintf("%d", userID),
+		"email":              email,
+		"name":               name,
+		"roles":              roles,
+		"permissions":        permissions,
+		"tenant_ids":         tenantIDs,
+		"tenant_permissions": tenantPermissions,
+		"exp":                expirationTime.Unix(),
+		"iat":                now.Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -212,11 +274,48 @@ func (s *service) ValidateToken(tokenString string) (*Claims, error) {
 		}
 	}
 
+	var permissions []string
+	if permsInterface, ok := claims["permissions"].([]interface{}); ok {
+		for _, perm := range permsInterface {
+			if permStr, ok := perm.(string); ok {
+				permissions = append(permissions, permStr)
+			}
+		}
+	}
+
+	var tenantIDs []uint
+	if tIDsInterface, ok := claims["tenant_ids"].([]interface{}); ok {
+		for _, tid := range tIDsInterface {
+			if tidFloat, ok := tid.(float64); ok {
+				tenantIDs = append(tenantIDs, uint(tidFloat))
+			}
+		}
+	}
+
+	var tenantPermissions map[string][]string
+	if tpInterface, ok := claims["tenant_permissions"].(map[string]interface{}); ok {
+		tenantPermissions = make(map[string][]string, len(tpInterface))
+		for tid, permsInterface := range tpInterface {
+			if permList, ok := permsInterface.([]interface{}); ok {
+				var perms []string
+				for _, p := range permList {
+					if pStr, ok := p.(string); ok {
+						perms = append(perms, pStr)
+					}
+				}
+				tenantPermissions[tid] = perms
+			}
+		}
+	}
+
 	return &Claims{
-		UserID: uint(userID),
-		Email:  email,
-		Name:   name,
-		Roles:  roles,
+		UserID:            uint(userID),
+		Email:             email,
+		Name:              name,
+		Roles:             roles,
+		Permissions:       permissions,
+		TenantIDs:         tenantIDs,
+		TenantPermissions: tenantPermissions,
 	}, nil
 }
 

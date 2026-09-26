@@ -375,7 +375,7 @@ The first production-ready release of GRAB - Go REST API Boilerplate.
 
 ### Project Structure
 ```
-go-rest-api-boilerplate/
+applico/
 ├── cmd/server/          # Application entry point
 ├── internal/            # Private application code
 │   ├── auth/           # Authentication logic
@@ -414,8 +414,8 @@ go-rest-api-boilerplate/
 ## Links
 
 - [Documentation](https://vahiiiid.github.io/go-rest-api-docs/)
-- [GitHub Repository](https://github.com/vahiiiid/go-rest-api-boilerplate)
-- [Report Issues](https://github.com/vahiiiid/go-rest-api-boilerplate/issues)
+- [GitHub Repository](https://github.com/fadebowaley/applico)
+- [Report Issues](https://github.com/fadebowaley/applico/issues)
 - [Contributing Guidelines](CONTRIBUTING.md)
 
 ---

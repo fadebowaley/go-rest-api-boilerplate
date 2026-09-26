@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/user"
+	"github.com/fadebowaley/applico/internal/user"
 )
 
 type MockService struct {
@@ -58,6 +58,42 @@ func (m *MockService) ListUsers(ctx context.Context, filters user.UserFilterPara
 		return nil, args.Get(1).(int64), args.Error(2)
 	}
 	return args.Get(0).([]user.User), args.Get(1).(int64), args.Error(2)
+}
+
+func (m *MockService) RequestPasswordReset(ctx context.Context, email string) (*user.PasswordResetResponse, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*user.PasswordResetResponse), args.Error(1)
+}
+
+func (m *MockService) ResetPassword(ctx context.Context, req user.ResetPasswordRequest) error {
+	args := m.Called(ctx, req)
+	return args.Error(0)
+}
+
+func (m *MockService) RemoveUserRole(ctx context.Context, userID uint, roleName string) error {
+	args := m.Called(ctx, userID, roleName)
+	return args.Error(0)
+}
+
+func (m *MockService) GetUserRoles(ctx context.Context, userID uint) ([]user.Role, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]user.Role), args.Error(1)
+}
+
+func (m *MockService) ChangePassword(ctx context.Context, userID uint, req user.ChangePasswordRequest) error {
+	args := m.Called(ctx, userID, req)
+	return args.Error(0)
+}
+
+func (m *MockService) AssignUserRole(ctx context.Context, userID uint, roleName string) error {
+	args := m.Called(ctx, userID, roleName)
+	return args.Error(0)
 }
 
 func (m *MockService) PromoteToAdmin(ctx context.Context, userID uint) error {

@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: 📚 Documentation
-    url: https://github.com/vahiiiid/go-rest-api-boilerplate/blob/main/README.md
+    url: https://github.com/fadebowaley/applico/blob/main/README.md
     about: Check the README for setup instructions and usage examples
   - name: 💬 Discussions
-    url: https://github.com/vahiiiid/go-rest-api-boilerplate/discussions
+    url: https://github.com/fadebowaley/applico/discussions
     about: Ask questions and discuss ideas with the community

@@ -24,6 +24,9 @@ type Repository interface {
 	RemoveRole(ctx context.Context, userID uint, roleName string) error
 	FindRoleByName(ctx context.Context, name string) (*Role, error)
 	GetUserRoles(ctx context.Context, userID uint) ([]Role, error)
+	CreatePasswordResetToken(ctx context.Context, token *PasswordResetToken) error
+	FindPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error)
+	MarkPasswordResetTokenUsed(ctx context.Context, id uint) error
 	Transaction(ctx context.Context, fn func(context.Context) error) error
 }
 
@@ -214,6 +217,31 @@ func (r *repository) GetUserRoles(ctx context.Context, userID uint) ([]Role, err
 		return nil, err
 	}
 	return roles, nil
+}
+
+func (r *repository) CreatePasswordResetToken(ctx context.Context, token *PasswordResetToken) error {
+	return r.getDB(ctx).WithContext(ctx).Create(token).Error
+}
+
+func (r *repository) FindPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error) {
+	var token PasswordResetToken
+	result := r.getDB(ctx).WithContext(ctx).Where("token_hash = ?", tokenHash).First(&token)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, result.Error
+	}
+	return &token, nil
+}
+
+func (r *repository) MarkPasswordResetTokenUsed(ctx context.Context, id uint) error {
+	now := time.Now()
+	result := r.getDB(ctx).WithContext(ctx).
+		Model(&PasswordResetToken{}).
+		Where("id = ?", id).
+		Update("used_at", now)
+	return result.Error
 }
 
 // Transaction executes a function within a database transaction

@@ -47,6 +47,9 @@ help:
 	@echo "  make create-admin         - Create new admin user (interactive)"
 	@echo "  make promote-admin ID=<n> - Promote existing user to admin"
 	@echo ""
+	@echo "🌱 Demo Data:"
+	@echo "  make seed-demo            - Seed full demo dataset (via API)"
+	@echo ""
 	@echo "📊️  Database Commands:"
 	@echo "  make migrate-create NAME=<name>  - Create new migration"
 	@echo "  make migrate-up                  - Apply all pending migrations"
@@ -177,7 +180,7 @@ endif
 swag:
 ifdef CONTAINER_RUNNING
 	@echo "$(ENV_MSG)"
-	@$(EXEC_CMD) swag init -g ./cmd/server/main.go -o ./api/docs
+	@$(EXEC_CMD) sh -c 'cd /app && swag init -g cmd/server/main.go -o api/docs --parseDependency --parseInternal --parseDepth 2 -d .,internal 2>&1 | grep -v warning'
 	@echo "✅ Swagger docs generated"
 else
 	@if command -v swag >/dev/null 2>&1; then \
@@ -363,6 +366,11 @@ else
 		exit 1; \
 	fi
 endif
+
+## seed-demo: Seed full demo dataset
+seed-demo:
+	@chmod +x scripts/seed_demo.sh
+	@bash scripts/seed_demo.sh
 
 ## build-binary: Build Go binary directly on host (requires Go)
 build-binary:

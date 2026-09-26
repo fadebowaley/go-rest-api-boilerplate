@@ -35,6 +35,14 @@ func (m *MockService) GetUserByID(ctx context.Context, id uint) (*User, error) {
 	return args.Get(0).(*User), args.Error(1)
 }
 
+func (m *MockService) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*User), args.Error(1)
+}
+
 func (m *MockService) UpdateUser(ctx context.Context, id uint, req UpdateUserRequest) (*User, error) {
 	args := m.Called(ctx, id, req)
 	if args.Get(0) == nil {
@@ -54,6 +62,42 @@ func (m *MockService) ListUsers(ctx context.Context, filters UserFilterParams, p
 		return nil, args.Get(1).(int64), args.Error(2)
 	}
 	return args.Get(0).([]User), args.Get(1).(int64), args.Error(2)
+}
+
+func (m *MockService) RequestPasswordReset(ctx context.Context, email string) (*PasswordResetResponse, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*PasswordResetResponse), args.Error(1)
+}
+
+func (m *MockService) ResetPassword(ctx context.Context, req ResetPasswordRequest) error {
+	args := m.Called(ctx, req)
+	return args.Error(0)
+}
+
+func (m *MockService) RemoveUserRole(ctx context.Context, userID uint, roleName string) error {
+	args := m.Called(ctx, userID, roleName)
+	return args.Error(0)
+}
+
+func (m *MockService) GetUserRoles(ctx context.Context, userID uint) ([]Role, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]Role), args.Error(1)
+}
+
+func (m *MockService) ChangePassword(ctx context.Context, userID uint, req ChangePasswordRequest) error {
+	args := m.Called(ctx, userID, req)
+	return args.Error(0)
+}
+
+func (m *MockService) AssignUserRole(ctx context.Context, userID uint, roleName string) error {
+	args := m.Called(ctx, userID, roleName)
+	return args.Error(0)
 }
 
 func (m *MockService) PromoteToAdmin(ctx context.Context, userID uint) error {
@@ -112,6 +156,24 @@ func (m *MockRepository) AssignRole(ctx context.Context, userID uint, roleName s
 
 func (m *MockRepository) RemoveRole(ctx context.Context, userID uint, roleName string) error {
 	args := m.Called(ctx, userID, roleName)
+	return args.Error(0)
+}
+
+func (m *MockRepository) CreatePasswordResetToken(ctx context.Context, token *PasswordResetToken) error {
+	args := m.Called(ctx, token)
+	return args.Error(0)
+}
+
+func (m *MockRepository) FindPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error) {
+	args := m.Called(ctx, tokenHash)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*PasswordResetToken), args.Error(1)
+}
+
+func (m *MockRepository) MarkPasswordResetTokenUsed(ctx context.Context, id uint) error {
+	args := m.Called(ctx, id)
 	return args.Error(0)
 }
 

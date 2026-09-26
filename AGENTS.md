@@ -28,8 +28,8 @@
 ### Documentation
 
 - **Main Docs**: https://vahiiiid.github.io/go-rest-api-docs/
-- **Repository**: https://github.com/vahiiiid/go-rest-api-boilerplate
-- **Issues**: https://github.com/vahiiiid/go-rest-api-boilerplate/issues
+- **Repository**: https://github.com/fadebowaley/applico
+- **Issues**: https://github.com/fadebowaley/applico/issues
 
 ---
 
@@ -203,8 +203,8 @@ make swag        # Update Swagger if API changed
        "strconv"
        
        "github.com/gin-gonic/gin"
-       "github.com/vahiiiid/go-rest-api-boilerplate/internal/contextutil"
-       apiErrors "github.com/vahiiiid/go-rest-api-boilerplate/internal/errors"
+       "github.com/fadebowaley/applico/internal/contextutil"
+       apiErrors "github.com/fadebowaley/applico/internal/errors"
    )
    
    type Handler struct {
@@ -338,7 +338,7 @@ make migrate-force VERSION=<version>           # Force version
 ### Getting Current User
 
 ```go
-import "github.com/vahiiiid/go-rest-api-boilerplate/internal/contextutil"
+import "github.com/fadebowaley/applico/internal/contextutil"
 
 func (h *Handler) SomeHandler(c *gin.Context) {
     userID := contextutil.GetUserID(c)
@@ -355,7 +355,7 @@ func (h *Handler) SomeHandler(c *gin.Context) {
 ### Protecting Routes
 
 ```go
-import "github.com/vahiiiid/go-rest-api-boilerplate/internal/middleware"
+import "github.com/fadebowaley/applico/internal/middleware"
 
 // Require authentication (handled by auth package middleware)
 // RequireAuth is from auth package, RequireRole/RequireAdmin are from middleware package
@@ -380,7 +380,7 @@ GRAB uses centralized error handling:
 ```go
 import (
     "errors"
-    apiErrors "github.com/vahiiiid/go-rest-api-boilerplate/internal/errors"
+    apiErrors "github.com/fadebowaley/applico/internal/errors"
 )
 
 // Validation errors (automatic field extraction)
@@ -585,7 +585,7 @@ GRAB includes these production-ready features:
 ### Project Structure
 
 ```
-go-rest-api-boilerplate/
+applico/
 ├── .github/              # GitHub workflows, templates
 ├── .cursor/              # Cursor AI rules
 ├── .windsurf/            # Windsurf AI rules
@@ -633,9 +633,9 @@ go-rest-api-boilerplate/
 ## 🔗 Additional Resources
 
 - **Full Documentation**: https://vahiiiid.github.io/go-rest-api-docs/
-- **GitHub Repository**: https://github.com/vahiiiid/go-rest-api-boilerplate
-- **Issue Tracker**: https://github.com/vahiiiid/go-rest-api-boilerplate/issues
-- **Discussions**: https://github.com/vahiiiid/go-rest-api-boilerplate/discussions
+- **GitHub Repository**: https://github.com/fadebowaley/applico
+- **Issue Tracker**: https://github.com/fadebowaley/applico/issues
+- **Discussions**: https://github.com/fadebowaley/applico/discussions
 - **Development Guide**: https://vahiiiid.github.io/go-rest-api-docs/DEVELOPMENT_GUIDE/
 - **Quick Reference**: https://vahiiiid.github.io/go-rest-api-docs/QUICK_REFERENCE/
 

@@ -10,9 +10,9 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/auth"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/config"
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/user"
+	"github.com/fadebowaley/applico/internal/auth"
+	"github.com/fadebowaley/applico/internal/config"
+	"github.com/fadebowaley/applico/internal/user"
 )
 
 func TestSetupRouter_HealthEndpoint(t *testing.T) {
@@ -47,7 +47,7 @@ func TestSetupRouter_HealthEndpoint(t *testing.T) {
 		},
 	}
 
-	router := SetupRouter(mockUserHandler, mockAuthService, testConfig, db)
+	router := SetupRouter(mockUserHandler, mockAuthService, testConfig, db, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	assert.NotNil(t, router)
 

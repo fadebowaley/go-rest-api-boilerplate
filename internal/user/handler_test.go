@@ -13,9 +13,134 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/vahiiiid/go-rest-api-boilerplate/internal/auth"
-	apiErrors "github.com/vahiiiid/go-rest-api-boilerplate/internal/errors"
+	"github.com/fadebowaley/applico/internal/auth"
+	apiErrors "github.com/fadebowaley/applico/internal/errors"
+	"github.com/fadebowaley/applico/internal/tenant"
 )
+
+// MockTenantService is a mock implementation of the tenant service
+type MockTenantService struct {
+	mock.Mock
+}
+
+func (m *MockTenantService) Create(ctx context.Context, req *tenant.CreateTenantRequest) (*tenant.TenantResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*tenant.TenantResponse), args.Error(1)
+}
+
+func (m *MockTenantService) GetByID(ctx context.Context, id uint) (*tenant.TenantResponse, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*tenant.TenantResponse), args.Error(1)
+}
+
+func (m *MockTenantService) List(ctx context.Context) (*[]tenant.TenantResponse, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*[]tenant.TenantResponse), args.Error(1)
+}
+
+func (m *MockTenantService) Update(ctx context.Context, id uint, req *tenant.UpdateTenantRequest) (*tenant.TenantResponse, error) {
+	args := m.Called(ctx, id, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*tenant.TenantResponse), args.Error(1)
+}
+
+func (m *MockTenantService) Delete(ctx context.Context, id uint) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockTenantService) AddUser(ctx context.Context, tenantID uint, req *tenant.AddTenantUserRequest) (*tenant.TenantUserResponse, error) {
+	args := m.Called(ctx, tenantID, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*tenant.TenantUserResponse), args.Error(1)
+}
+
+func (m *MockTenantService) RemoveUser(ctx context.Context, tenantID, userID uint) error {
+	args := m.Called(ctx, tenantID, userID)
+	return args.Error(0)
+}
+
+func (m *MockTenantService) GetUsers(ctx context.Context, tenantID uint) (*[]tenant.TenantUserResponse, error) {
+	args := m.Called(ctx, tenantID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*[]tenant.TenantUserResponse), args.Error(1)
+}
+
+func (m *MockTenantService) GetUserTenants(ctx context.Context, userID uint) (*[]tenant.TenantUserResponse, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*[]tenant.TenantUserResponse), args.Error(1)
+}
+
+func (m *MockTenantService) GetUserTenant(ctx context.Context, userID uint, tenantID uint) (*tenant.TenantUserResponse, error) {
+	args := m.Called(ctx, userID, tenantID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*tenant.TenantUserResponse), args.Error(1)
+}
+
+func (m *MockTenantService) InviteUser(ctx context.Context, inviterID uint, tenantID uint, req *tenant.InviteUserRequest) (*tenant.TenantUserResponse, error) {
+	args := m.Called(ctx, inviterID, tenantID, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*tenant.TenantUserResponse), args.Error(1)
+}
+
+func (m *MockTenantService) CreateRole(ctx context.Context, userID uint, tenantID uint, req *tenant.CreateTenantRoleRequest) (*tenant.TenantRoleResponse, error) {
+	args := m.Called(ctx, userID, tenantID, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*tenant.TenantRoleResponse), args.Error(1)
+}
+
+func (m *MockTenantService) GetRole(ctx context.Context, userID uint, roleID uint) (*tenant.TenantRoleResponse, error) {
+	args := m.Called(ctx, userID, roleID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*tenant.TenantRoleResponse), args.Error(1)
+}
+
+func (m *MockTenantService) ListRoles(ctx context.Context, userID uint, tenantID uint) (*[]tenant.TenantRoleResponse, error) {
+	args := m.Called(ctx, userID, tenantID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*[]tenant.TenantRoleResponse), args.Error(1)
+}
+
+func (m *MockTenantService) UpdateRole(ctx context.Context, userID uint, roleID uint, req *tenant.UpdateTenantRoleRequest) (*tenant.TenantRoleResponse, error) {
+	args := m.Called(ctx, userID, roleID, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*tenant.TenantRoleResponse), args.Error(1)
+}
+
+func (m *MockTenantService) DeleteRole(ctx context.Context, userID uint, roleID uint) error {
+	args := m.Called(ctx, userID, roleID)
+	return args.Error(0)
+}
 
 // MockAuthService is a mock implementation of the auth service
 type MockAuthService struct {
@@ -70,7 +195,7 @@ func TestHandler_Register(t *testing.T) {
 	tests := []struct {
 		name           string
 		requestBody    interface{}
-		setupMocks     func(*MockService, *MockAuthService)
+		setupMocks     func(*MockService, *MockAuthService, *MockTenantService)
 		expectedStatus int
 		checkResponse  func(*testing.T, *httptest.ResponseRecorder)
 	}{
@@ -81,13 +206,26 @@ func TestHandler_Register(t *testing.T) {
 				Email:    "john@example.com",
 				Password: "password123",
 			},
-			setupMocks: func(ms *MockService, mas *MockAuthService) {
+			setupMocks: func(ms *MockService, mas *MockAuthService, mts *MockTenantService) {
 				user := &User{
 					ID:    1,
 					Name:  "John Doe",
 					Email: "john@example.com",
 				}
 				ms.On("RegisterUser", mock.Anything, mock.AnythingOfType("user.RegisterRequest")).Return(user, nil)
+				ms.On("AssignUserRole", mock.Anything, uint(1), "tenant_admin").Return(nil)
+				mts.On("Create", mock.Anything, mock.AnythingOfType("*tenant.CreateTenantRequest")).Return(&tenant.TenantResponse{
+					ID:   1,
+					Name: "John Doe's Organization",
+					Slug: "john-doe's-organization",
+				}, nil)
+				mts.On("AddUser", mock.Anything, uint(1), mock.AnythingOfType("*tenant.AddTenantUserRequest")).Return(&tenant.TenantUserResponse{
+					ID:       1,
+					TenantID: 1,
+					UserID:   1,
+					Roles:    []string{"tenant_admin"},
+				}, nil)
+				ms.On("GetUserByID", mock.Anything, uint(1)).Return(user, nil)
 				tokenPair := &auth.TokenPair{
 					AccessToken:  "mock-access-token",
 					RefreshToken: "mock-refresh-token",
@@ -112,7 +250,7 @@ func TestHandler_Register(t *testing.T) {
 		{
 			name:        "invalid JSON format",
 			requestBody: `{"name": "John", "email": invalid-json`,
-			setupMocks: func(ms *MockService, mas *MockAuthService) {
+			setupMocks: func(ms *MockService, mas *MockAuthService, mts *MockTenantService) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -130,7 +268,7 @@ func TestHandler_Register(t *testing.T) {
 			requestBody: RegisterRequest{
 				Name: "John Doe",
 			},
-			setupMocks: func(ms *MockService, mas *MockAuthService) {
+			setupMocks: func(ms *MockService, mas *MockAuthService, mts *MockTenantService) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -150,7 +288,7 @@ func TestHandler_Register(t *testing.T) {
 				Email:    "john@example.com",
 				Password: "password123",
 			},
-			setupMocks: func(ms *MockService, mas *MockAuthService) {
+			setupMocks: func(ms *MockService, mas *MockAuthService, mts *MockTenantService) {
 				ms.On("RegisterUser", mock.Anything, mock.AnythingOfType("user.RegisterRequest")).Return(nil, ErrEmailExists)
 			},
 			expectedStatus: http.StatusConflict,
@@ -171,7 +309,7 @@ func TestHandler_Register(t *testing.T) {
 				Email:    "john@example.com",
 				Password: "password123",
 			},
-			setupMocks: func(ms *MockService, mas *MockAuthService) {
+			setupMocks: func(ms *MockService, mas *MockAuthService, mts *MockTenantService) {
 				ms.On("RegisterUser", mock.Anything, mock.AnythingOfType("user.RegisterRequest")).Return(nil, errors.New("database connection error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -192,13 +330,26 @@ func TestHandler_Register(t *testing.T) {
 				Email:    "john@example.com",
 				Password: "password123",
 			},
-			setupMocks: func(ms *MockService, mas *MockAuthService) {
+			setupMocks: func(ms *MockService, mas *MockAuthService, mts *MockTenantService) {
 				user := &User{
 					ID:    1,
 					Name:  "John Doe",
 					Email: "john@example.com",
 				}
 				ms.On("RegisterUser", mock.Anything, mock.AnythingOfType("user.RegisterRequest")).Return(user, nil)
+				ms.On("AssignUserRole", mock.Anything, uint(1), "tenant_admin").Return(nil)
+				mts.On("Create", mock.Anything, mock.AnythingOfType("*tenant.CreateTenantRequest")).Return(&tenant.TenantResponse{
+					ID:   1,
+					Name: "John Doe's Organization",
+					Slug: "john-doe's-organization",
+				}, nil)
+				mts.On("AddUser", mock.Anything, uint(1), mock.AnythingOfType("*tenant.AddTenantUserRequest")).Return(&tenant.TenantUserResponse{
+					ID:       1,
+					TenantID: 1,
+					UserID:   1,
+					Roles:    []string{"tenant_admin"},
+				}, nil)
+				ms.On("GetUserByID", mock.Anything, uint(1)).Return(user, nil)
 				mas.On("GenerateTokenPair", mock.Anything, uint(1), "john@example.com", "John Doe").Return(nil, errors.New("token generation failed"))
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -215,7 +366,7 @@ func TestHandler_Register(t *testing.T) {
 		{
 			name:        "empty request body",
 			requestBody: `{}`,
-			setupMocks: func(ms *MockService, mas *MockAuthService) {
+			setupMocks: func(ms *MockService, mas *MockAuthService, mts *MockTenantService) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -235,9 +386,10 @@ func TestHandler_Register(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := &MockService{}
 			mockAuthService := &MockAuthService{}
-			tt.setupMocks(mockService, mockAuthService)
+			mockTenantSvc := &MockTenantService{}
+			tt.setupMocks(mockService, mockAuthService, mockTenantSvc)
 
-			handler := NewHandler(mockService, mockAuthService)
+			handler := NewHandler(mockService, mockAuthService, mockTenantSvc)
 
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
@@ -431,7 +583,7 @@ func TestHandler_GetUser(t *testing.T) {
 			mockAuthService := &MockAuthService{}
 			tt.setupMocks(mockService, mockAuthService)
 
-			handler := NewHandler(mockService, mockAuthService)
+			handler := NewHandler(mockService, mockAuthService, nil)
 
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
@@ -590,7 +742,7 @@ func TestHandler_Login(t *testing.T) {
 			mockAuthService := &MockAuthService{}
 			tt.setupMocks(mockService, mockAuthService)
 
-			handler := NewHandler(mockService, mockAuthService)
+			handler := NewHandler(mockService, mockAuthService, nil)
 
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
@@ -807,7 +959,7 @@ func TestHandler_UpdateUser(t *testing.T) {
 			mockAuthService := &MockAuthService{}
 			tt.setupMocks(mockService, mockAuthService)
 
-			handler := NewHandler(mockService, mockAuthService)
+			handler := NewHandler(mockService, mockAuthService, nil)
 
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
@@ -951,7 +1103,7 @@ func TestHandler_DeleteUser(t *testing.T) {
 			mockAuthService := &MockAuthService{}
 			tt.setupMocks(mockService, mockAuthService)
 
-			handler := NewHandler(mockService, mockAuthService)
+			handler := NewHandler(mockService, mockAuthService, nil)
 
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
@@ -1024,7 +1176,7 @@ func TestHandler_GetMe(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := new(MockService)
 			mockAuthService := new(MockAuthService)
-			handler := NewHandler(mockService, mockAuthService)
+			handler := NewHandler(mockService, mockAuthService, nil)
 
 			tt.setupMocks(mockService)
 
@@ -1161,7 +1313,7 @@ func TestHandler_ListUsers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := new(MockService)
 			mockAuthService := new(MockAuthService)
-			handler := NewHandler(mockService, mockAuthService)
+			handler := NewHandler(mockService, mockAuthService, nil)
 
 			tt.setupMocks(mockService)
 
